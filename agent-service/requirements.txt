@@ -7,3 +7,5 @@ python-dotenv
 pgvector
 pydantic
 psycopg2-binary
+sentence-transformers
+langchain-huggingface
