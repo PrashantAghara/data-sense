@@ -7,18 +7,11 @@ TABLE_METADATA = {
             "Use for product search, category analysis, brand comparison, "
             "price range queries, and discount analysis."
         ),
-        "use_when": [
-            "which products are in the Electronics Fashion Grocery Books Sports Beauty Toys Automotive Office category",
-            "what is the price MRP selling price discount of a product",
-            "which brand makes this product — Samsung Apple Xiaomi Amul Prestige Boat",
-            "how many products are listed on the platform",
-            "what are the top rated or best reviewed products",
-            "find the cheapest or most expensive products",
-            "which products are currently active or inactive",
-            "show product details subcategory rating reviews",
-            "compare products by brand or category",
-            "products with highest discount percent",
-        ],
+        "use_when": (
+            "product catalogue — category brand price MRP discount rating reviews; "
+            "Electronics Fashion Grocery Books Sports Beauty Toys Automotive Office; "
+            "not for sales volume or revenue (use order_items for that)"
+        ),
         "relates_to": ["order_items", "inventory"],
     },
     "sellers": {
@@ -29,18 +22,11 @@ TABLE_METADATA = {
             "and bank details. Use for seller performance, top sellers, "
             "verified vs unverified seller analysis, and seller geography."
         ),
-        "use_when": [
-            "which seller has the most returned items or highest return count",
-            "which seller sold the most products or generated the highest revenue",
-            "rank sellers by number of returns cancellations or refunds",
-            "show top performing sellers by order count or earnings",
-            "which sellers are verified or unverified on the platform",
-            "what is the rating of a seller — seller performance score",
-            "how many sellers are registered in Mumbai Delhi Bengaluru or other cities",
-            "which sellers are Brand Store Authorised Reseller Individual Wholesaler Distributor",
-            "when did a seller join the platform",
-            "seller GSTIN GST registration and bank details",
-        ],
+        "use_when": (
+            "seller merchant profile — name type rating verified GSTIN city state; "
+            "Brand Store Authorised Reseller Individual Wholesaler Distributor; "
+            "not for revenue or product queries (use order_items for earnings)"
+        ),
         "relates_to": ["order_items", "inventory"],
     },
     "customers": {
@@ -51,18 +37,11 @@ TABLE_METADATA = {
             "Use for customer segmentation, geographic analysis, premium member "
             "queries, demographic breakdowns, and new customer registration trends."
         ),
-        "use_when": [
-            "how many customers bought a product or placed an order",
-            "which customers are from Maharashtra Gujarat Karnataka Tamil Nadu or other states",
-            "which customers live in Mumbai Delhi Bengaluru Hyderabad Chennai Kolkata Pune Ahmedabad",
-            "show top 10 customers by total spending or number of orders",
-            "how many male female or other gender customers are there",
-            "which customers have premium membership",
-            "what is the age or date of birth distribution of customers",
-            "how many new customers registered in a given month or year",
-            "find customer profile by email phone pincode or location",
-            "customer segmentation demographic breakdown by city state gender",
-        ],
+        "use_when": (
+            "customer profile — gender age premium membership city state registration date; "
+            "Male Female premium is_premium Maharashtra Gujarat Karnataka; "
+            "not for what they bought or how they paid (use orders + order_payments)"
+        ),
         "relates_to": ["orders"],
     },
     "inventory": {
@@ -73,18 +52,11 @@ TABLE_METADATA = {
             "Use for low stock alerts, out-of-stock analysis, warehouse distribution, "
             "and inventory health across Mumbai Delhi Bengaluru etc. warehouses."
         ),
-        "use_when": [
-            "which products are low on stock or need to be restocked",
-            "which products are out of stock at a warehouse",
-            "how much inventory is available in Mumbai Delhi Bengaluru Hyderabad Chennai Kolkata Pune Ahmedabad warehouse",
-            "which products have stock below the reorder level threshold",
-            "when was stock last replenished or restocked at a warehouse",
-            "show inventory health across all warehouses",
-            "which products are currently in stock and available for sale",
-            "how many units of a product are available at each warehouse",
-            "reorder quantity needed for low stock products",
-            "warehouse stock distribution by city location",
-        ],
+        "use_when": (
+            "stock levels warehouse — low stock out of stock reorder quantity is_in_stock; "
+            "Mumbai Delhi Bengaluru Hyderabad Chennai Kolkata Pune Ahmedabad warehouse; "
+            "not for sales or orders (use order_items for sold quantities)"
+        ),
         "relates_to": ["products", "sellers"],
     },
     "orders": {
@@ -97,18 +69,11 @@ TABLE_METADATA = {
             "return analysis, order trends over time, and shipping analysis. "
             "Join with order_items for product detail, order_payments for payment method."
         ),
-        "use_when": [
-            "how many orders were placed delivered shipped cancelled returned or failed",
-            "how many orders were cancelled in Maharashtra Gujarat Delhi Karnataka or other states",
-            "show monthly or weekly order volume trend over time",
-            "what is the cancellation rate or return rate across all orders",
-            "which delivery partner Delhivery BlueDart Ekart DTDC XpressBees handled the most orders",
-            "what is the average delivery time from order placed to delivered",
-            "which orders used a coupon code SAVE10 FLAT50 DIWALI30 NEWUSER",
-            "how many orders used Standard Express Same Day or Scheduled shipping",
-            "how many gift orders were placed by customers",
-            "order count breakdown by city state pincode shipping address region",
-        ],
+        "use_when": (
+            "order status delivery shipping — cancelled delivered returned shipped processing; "
+            "coupon code SAVE10 FLAT50 DIWALI30 delivery partner Delhivery BlueDart Ekart; "
+            "not for payment method or revenue (use order_payments for UPI EMI Wallet)"
+        ),
         "relates_to": ["customers", "order_items", "order_payments"],
     },
     "order_items": {
@@ -120,18 +85,11 @@ TABLE_METADATA = {
             "product sales volume, category-level revenue, GST analysis, "
             "seller earnings, and cross-table joins (products + orders + payments)."
         ),
-        "use_when": [
-            "what is the total revenue or sales amount for a product seller or category",
-            "show monthly revenue trend or total sales amount over time in 2023 2024",
-            "which products were bought or sold the most by quantity",
-            "which seller has the most returned items — join sellers with order_items on is_returned",
-            "how much GST tax was collected across all orders — 5% 12% 18% 28% slab breakdown",
-            "what is the average order value subtotal per order",
-            "how many items were returned by customers across all orders",
-            "revenue breakdown by product category Electronics Fashion Grocery Sports Beauty",
-            "how much total discount was given on all items sold",
-            "seller earnings or revenue contribution per seller",
-        ],
+        "use_when": (
+            "revenue subtotal GST returned items — central fact table for all sales data; "
+            "quantity sold seller earnings category revenue 5% 12% 18% 28% GST slab; "
+            "join hub — connects products sellers orders payments for any cross-table query"
+        ),
         "relates_to": ["orders", "products", "sellers"],
     },
     "order_payments": {
@@ -145,18 +103,11 @@ TABLE_METADATA = {
             "Paytm PhonePe Amazon Pay Google Pay Mobikwik FreeCharge wallet breakdown, "
             "revenue collection, EMI tenure analysis, and split payment queries."
         ),
-        "use_when": [
-            "how many customers paid using UPI — UPI payment method count",
-            "how many orders were paid by Credit Card Debit Card Net Banking COD or EMI",
-            "which customers used Paytm PhonePe Google Pay Amazon Pay Mobikwik FreeCharge wallet to pay",
-            "which Paytm wallet users placed orders — filter by wallet_name = Paytm",
-            "what is the average EMI tenure in months for orders above 10000 rupees",
-            "how many orders used EMI and what was the tenure 3 6 9 12 18 24 months",
-            "show total revenue collected broken down by payment method",
-            "how many payments were completed refunded or failed",
-            "what is the grand total revenue collected across all successful payments",
-            "which orders had split payments — two payment records for one order",
-        ],
+        "use_when": (
+            "payment method how customer paid — UPI, COD, EMI, Credit Card, Debit Card, Net Banking, Wallet; "
+            "Paytm, PhonePe, Google Pay, Amazon Pay, Mobikwik, FreeCharge, EMI tenure months; "
+            "not for order status or shipping (use orders for that)"
+        ),
         "relates_to": ["orders", "customers"],
     },
 }
