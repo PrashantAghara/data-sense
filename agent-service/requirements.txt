@@ -12,3 +12,4 @@ langchain-huggingface
 pandas
 numpy
 matplotlib
+pydantic-settings
