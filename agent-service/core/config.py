@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     postgres_host: str = "localhost"
     postgres_port: str = "5432"
     hf_token: str
+    langchain_api_key: str
 
     class Config:
         env_file = ".env"

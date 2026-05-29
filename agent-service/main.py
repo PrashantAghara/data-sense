@@ -1,7 +1,10 @@
 import uvicorn
 from fastapi import FastAPI
+from api.query import router
 
 app = FastAPI(title="DataSense AI")
+
+app.include_router(router)
 
 
 @app.get("/health")
