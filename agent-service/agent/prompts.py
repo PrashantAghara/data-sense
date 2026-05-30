@@ -100,19 +100,26 @@ CHART SELECTION RULES:
 - For distributions, use px.histogram()
 
 LAYOUT RULES:
-- Always set a descriptive title via title= parameter
-- Always set x and y axis labels via labels= dict parameter
-- For horizontal bar: swap x and y so bars read left to right
+- Always set a descriptive title via title= parameter in the px call
+- Set axis labels inside the px call: labels={{"column_name": "Display Name", ...}}
+- Never pass labels= into fig.update_layout() — it is not valid there
+- For horizontal bar: swap x and y so bars read left to right, add orientation="h"
 - Use color_discrete_sequence=["#58a6ff"] for single-series charts
 - Always end with:
     fig.update_layout(
+        title="Your title here",
+        xaxis_title="X Label",
+        yaxis_title="Y Label",
         margin=dict(t=60, b=60, l=120, r=40),
-        height=max(400, len(df) * 28) if <horizontal> else 450,
+        height=max(400, len(df) * 28),
     )
 
 ANNOTATION RULES:
-- For bar charts: add text=<value_column> and textposition="outside" in the px call
-- For line charts: add markers=True
+- For bar charts: do NOT use text= in the px.bar() call
+- Instead use text_auto=True in the px.bar() call for automatic labels
+- Then add: fig.update_traces(textposition="outside", texttemplate="%{{y:.2s}}")
+- For horizontal bar: fig.update_traces(textposition="outside", texttemplate="%{{x:.2s}}")
+- Never use texttemplate="%{{text:.1f}}" — this causes NaN when text= is a column name string
 """
 
 _followup_question = """
