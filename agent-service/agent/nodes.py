@@ -14,7 +14,6 @@ from agent.prompts import (
 )
 from agent.rag.retriever import retrieve_relevant_schema, get_all_tables
 from agent.db.execute import execute_sql
-from agent.utils.utils import get_longest_label
 
 MAX_RETRIES = 3
 BLOCKED_KEYWORDS = ["insert", "update", "delete", "drop", "truncate", "alter", "create"]
