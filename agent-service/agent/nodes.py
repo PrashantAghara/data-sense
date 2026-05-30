@@ -147,26 +147,20 @@ def generate_insight(state: AgentState) -> AgentState:
 
 
 def generate_viz(state: AgentState) -> AgentState:
-    if not state.get("sql_result"):
+    rows = state.get("sql_result") or []
+    if not rows:
         return {**state, "viz_code": ""}
-    df = pd.DataFrame(state["sql_result"])
-    if df.empty:
-        return {**state, "viz_code": ""}
-    viz_code = (
-        (VIZ_CODE_PROMPT | llm)
-        .invoke(
-            {
-                "question": state["question"],
-                "columns": list(df.columns),
-                "num_rows": len(df),
-                "sample_data": df.head(3).to_dict(orient="records"),
-                "longest_label": get_longest_label(df),
-            }
-        )
-        .content
+
+    columns = list(rows[0].keys()) if rows else []
+
+    chain = VIZ_CODE_PROMPT | llm
+    result = chain.invoke(
+        {
+            "question": state["question"],
+            "columns": ", ".join(columns),
+        }
     )
-    print(f"[Viz]\n{viz_code}")
-    return {**state, "viz_code": viz_code}
+    return {**state, "viz_code": result.content.strip()}
 
 
 def suggest_followups(state: AgentState) -> AgentState:

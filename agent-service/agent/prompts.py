@@ -79,35 +79,40 @@ If the price or cost part is involved in the insights, the currency should be IN
 """
 
 _viz_code_generator = """
-Write a Matplotlib Python snippet to visualise the data. Assume the data is already in a pandas DataFrame called `df`.
-RULES: 
+Write a Plotly Express Python snippet to visualise the data.
+Assume the data is already in a pandas DataFrame called `df`.
+The result must be stored in a variable called `fig`.
+
+RULES:
 - No ```python fences
 - No ``` backticks of any kind
 - No explanation or comments
-- First line must start with 'import' or 'fig'
+- First line must start with `import` or `fig`
+- Always import plotly.express as px if not already imported
+- Always store the final chart in a variable named `fig`
+- Never call fig.show() or plt.show()
 
-FIGURE SIZE RULES — calculate dynamically based on data:
-- For bar charts: width = max(10, len(df) * 0.8), height = 6
-- For horizontal bar charts: width = 10, height = max(6, len(df) * 0.5)
-- For line charts: width = max(10, len(df) * 0.4), height = 6
-- If number of rows > 15, ALWAYS prefer horizontal bar chart (barh) over vertical bar
-- If any label length > 10 characters, ALWAYS use horizontal bar chart (barh)
+CHART SELECTION RULES:
+- If number of rows > 15, ALWAYS use horizontal bar (orientation="h")
+- If any label/category value length > 10 characters, ALWAYS use horizontal bar (orientation="h")
+- For time-series data (date/month/year column), use px.line()
+- For comparisons (<=15 categories), use px.bar()
+- For distributions, use px.histogram()
 
-LABEL RULES:
-- For vertical bar: rotate x labels using EXACTLY these two lines:
-    ax.tick_params(axis='x', rotation=45)
-    plt.setp(ax.get_xticklabels(), ha='right')
-- For horizontal bar: no rotation needed, labels are on y axis
-- Always use ax.set_xlabel() and ax.set_ylabel()
-- Always set a title with ax.set_title(fontsize=14)
-- Add value annotations on each bar:
-    - Vertical bar: ax.bar_label(ax.containers[0], fmt='%.1f', padding=3)
-    - Horizontal bar: ax.bar_label(ax.containers[0], fmt='%.1f', padding=3)
+LAYOUT RULES:
+- Always set a descriptive title via title= parameter
+- Always set x and y axis labels via labels= dict parameter
+- For horizontal bar: swap x and y so bars read left to right
+- Use color_discrete_sequence=["#58a6ff"] for single-series charts
+- Always end with:
+    fig.update_layout(
+        margin=dict(t=60, b=60, l=120, r=40),
+        height=max(400, len(df) * 28) if <horizontal> else 450,
+    )
 
-SPACING RULES:
-- Always end with plt.tight_layout(pad=2.0)
-- Always end with plt.show()
-- Never use fig.show()
+ANNOTATION RULES:
+- For bar charts: add text=<value_column> and textposition="outside" in the px call
+- For line charts: add markers=True
 """
 
 _followup_question = """
@@ -157,11 +162,7 @@ VIZ_CODE_PROMPT = ChatPromptTemplate.from_messages(
         ("system", _viz_code_generator),
         (
             "human",
-            """Question: {question}
-Columns: {columns}
-Num rows: {num_rows}
-Sample data: {sample_data}
-Longest label: {longest_label}""",
+            """Question: {question}\nColumns: {columns}""",
         ),
     ]
 )
