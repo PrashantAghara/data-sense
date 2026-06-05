@@ -48,7 +48,6 @@ st.markdown(
         color: var(--text-primary);
     }
 
-    /* Only hide the hamburger menu and footer — nothing else */
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
 
@@ -206,12 +205,40 @@ st.markdown(
 )
 
 
+# ── Node metadata ──────────────────────────────────────────────────────────────
+NODE_META = {
+    "ambiguity_detector": ("🤔", "Checking question clarity"),
+    "retrieve_schema": ("🗄️", "Fetching database schema"),
+    "generate_sql": ("⚙️", "Generating SQL query"),
+    "validate_sql": ("🛡️", "Validating SQL safety"),
+    "execute_sql": ("⚡", "Executing SQL query"),
+    "rewrite_sql": ("✏️", "Rewriting SQL (retry)"),
+    "explain_sql": ("💬", "Explaining the query"),
+    "generate_insight": ("💡", "Generating insights"),
+    "generate_viz": ("📊", "Building visualization"),
+    "suggest_followups": ("📋", "Suggesting follow-ups"),
+}
+
+# What to show inside each st.status step as a detail line
+NODE_DETAIL = {
+    "ambiguity_detector": "Analysing question intent and checking if clarification is needed…",
+    "retrieve_schema": "Running RAG over pgvector to pull relevant table schemas…",
+    "generate_sql": "Prompting Groq llama-3.3-70b to write the SQL query…",
+    "validate_sql": "Scanning for destructive keywords (INSERT / DROP / DELETE…)",
+    "execute_sql": "Running query against PostgreSQL…",
+    "rewrite_sql": "SQL failed — asking LLM to self-correct and retry…",
+    "explain_sql": "Generating a plain-English explanation of the SQL…",
+    "generate_insight": "Summarising result rows into a key business insight…",
+    "generate_viz": "Writing Plotly visualisation code for the result set…",
+    "suggest_followups": "Generating 3 follow-up questions based on the insight…",
+}
+
+
 # ── Persist chat history ───────────────────────────────────────────────────────
 def save_messages():
     try:
         HISTORY_FILE.write_text(
-            json.dumps(st.session_state.messages, indent=2),
-            encoding="utf-8",
+            json.dumps(st.session_state.messages, indent=2), encoding="utf-8"
         )
     except Exception:
         pass
@@ -243,8 +270,84 @@ def init_state():
 init_state()
 
 
-# ── Helper: call FastAPI ───────────────────────────────────────────────────────
-def call_agent(question: str) -> dict:
+# ── SSE streaming call with st.status() steps ─────────────────────────────────
+def call_agent_streaming(question: str) -> dict:
+    """
+    Streams /query/stream and renders each node as a live st.status() block —
+    exactly like Claude's tool-use UI: spinning while active, ticked when done.
+    Returns the final result dict.
+    """
+    payload = {
+        "question": question,
+        "conversation_history": st.session_state.history,
+        "user_email": "demo@datasense.ai",
+    }
+
+    start = datetime.now()
+    data = {}
+
+    # One st.status container per node that actually fires.
+    # We open it when the node starts, close it (complete) when the next starts.
+    active_status = None  # the currently open st.status context
+    active_node = None  # key of the currently running node
+
+    with httpx.Client(timeout=120) as client:
+        with client.stream("POST", f"{FASTAPI_URL}/query/stream", json=payload) as resp:
+            resp.raise_for_status()
+
+            buffer = ""
+            for raw_chunk in resp.iter_text():
+                buffer += raw_chunk
+
+                while "\n\n" in buffer:
+                    event_str, buffer = buffer.split("\n\n", 1)
+                    if not event_str.strip():
+                        continue
+
+                    event_type = ""
+                    event_data = ""
+                    for line in event_str.splitlines():
+                        if line.startswith("event: "):
+                            event_type = line[7:].strip()
+                        elif line.startswith("data: "):
+                            event_data = line[6:].strip()
+
+                    if not event_data:
+                        continue
+
+                    parsed = json.loads(event_data)
+
+                    # ── node_update: a new node just started ───────────────
+                    if event_type == "node_update":
+                        node_key = parsed.get("node", "")
+
+                        # Close the previous st.status as complete
+                        if active_status is not None:
+                            active_status.update(state="complete", expanded=False)
+
+                        icon, label = NODE_META.get(node_key, ("▸", node_key))
+                        detail = NODE_DETAIL.get(node_key, "")
+
+                        # Open a new st.status — starts spinning automatically
+                        active_status = st.status(f"{icon} {label}", expanded=True)
+                        active_status.markdown(
+                            f"<span style='font-size:0.82rem;color:#7d8590;'>{detail}</span>",
+                            unsafe_allow_html=True,
+                        )
+                        active_node = node_key
+
+                    # ── result: stream finished, final payload arrived ──────
+                    elif event_type == "result":
+                        if active_status is not None:
+                            active_status.update(state="complete", expanded=False)
+                        data = parsed
+
+    data["_duration_ms"] = int((datetime.now() - start).total_seconds() * 1000)
+    return data
+
+
+# ── Fallback: plain POST (if /query/stream not yet deployed) ──────────────────
+def call_agent_plain(question: str) -> dict:
     payload = {
         "question": question,
         "conversation_history": st.session_state.history,
@@ -284,11 +387,12 @@ def render_chart(viz_code: str, rows: list):
         st.warning(f"⚠️ Chart render failed: {exc}")
 
 
-# ── Helper: render assistant response ─────────────────────────────────────────
+# ── Helper: render final assistant response ────────────────────────────────────
 def render_assistant_response(data: dict):
     if data.get("error"):
         st.markdown(
-            f'<div class="error-block">❌ {data["error"]}</div>', unsafe_allow_html=True
+            f'<div class="error-block">❌ {data["error"]}</div>',
+            unsafe_allow_html=True,
         )
         return
 
@@ -374,7 +478,6 @@ with st.sidebar:
         '<div class="logo-sub">Natural Language → SQL → Insight</div>',
         unsafe_allow_html=True,
     )
-
     st.divider()
 
     try:
@@ -396,7 +499,6 @@ with st.sidebar:
         )
 
     st.divider()
-
     st.markdown("**Session Stats**")
     st.markdown(
         f'<div class="metric-card">Queries this session: <span>{st.session_state.query_count}</span></div>',
@@ -414,7 +516,6 @@ with st.sidebar:
         )
 
     st.divider()
-
     st.markdown("**Try these**")
     suggestions = [
         "Top 10 customers by revenue",
@@ -429,7 +530,6 @@ with st.sidebar:
             st.rerun()
 
     st.divider()
-
     if st.button("🗑 Clear conversation", use_container_width=True):
         st.session_state.messages = []
         st.session_state.history = []
@@ -469,18 +569,28 @@ if question:
     st.session_state.messages.append({"role": "user", "content": question})
 
     with st.chat_message("assistant"):
-        with st.spinner("Agent thinking..."):
+        try:
+            # ── Streaming path: each node appears as a live st.status() step
+            data = call_agent_streaming(question)
+
+        except httpx.ConnectError:
+            # /query/stream not reachable — fall back to plain spinner
             try:
-                data = call_agent(question)
+                with st.spinner("Agent thinking..."):
+                    data = call_agent_plain(question)
             except httpx.ConnectError:
-                data = {
-                    "error": "Cannot reach agent service at localhost:8000. Is FastAPI running?"
-                }
+                data = {"error": "Cannot reach agent service. Is FastAPI running?"}
             except httpx.TimeoutException:
                 data = {"error": "Agent timed out after 90 seconds."}
             except Exception as exc:
                 data = {"error": str(exc)}
 
+        except httpx.TimeoutException:
+            data = {"error": "Agent timed out after 120 seconds."}
+        except Exception as exc:
+            data = {"error": str(exc)}
+
+        # ── Final response renders below all the status steps ─────────────
         render_assistant_response(data)
 
     st.session_state.messages.append({"role": "assistant", "data": data})
